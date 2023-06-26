@@ -33,6 +33,10 @@ import { makeSelectUsername } from './selectors';
 import reducer from './reducer';
 import saga from './saga';
 
+
+import axios from 'axios';
+import StyledButton from 'components/Button/StyledButton';
+
 const key = 'home';
 
 const stateSelector = createStructuredSelector({
@@ -68,6 +72,40 @@ export default function HomePage() {
     if (username && username.trim().length > 0) {
       onSubmitForm();
     }
+
+    Kakao.Auth.createLoginButton({
+      container: '#kakaoLoginButton',
+      scope: "talk_calendar",
+      success: function (response) {
+
+        alert(response.access_token);
+        setCookie("kakao-access-token", response.access_token, 1);
+        // $.ajax({
+        //   type: "POST",
+        //   url: "./login-query-kakao",
+        //   data: { "access_token": response.access_token },
+        //   dataType: "json",
+        //   statusCode: {
+        //     404: function (data) {
+
+        //       setCookie("kakao-access-token", response.access_token, 1);
+        //       location.href = "{{ url_for("user.register_form") }}";
+        //     },
+        //     200: function (data) {
+
+
+
+        //     }
+        //   }
+        // }).done(function (data) {
+        //   console.log(data);
+
+        // })
+      },
+      fail: function (error) {
+        console.log(error);
+      },
+    });
   }, []);
 
   const reposListProps = {
@@ -75,6 +113,31 @@ export default function HomePage() {
     error: error,
     repos: repos,
   };
+
+
+
+
+  function setCookie(cookie_name, value, days) {
+    var exdate = new Date();
+    exdate.setDate(exdate.getDate() + days);
+    // 설정 일수만큼 현재시간에 만료값으로 지정
+
+    var cookie_value = escape(value) + ((days == null) ? '' : ';    expires=' + exdate.toUTCString());
+    document.cookie = cookie_name + '=' + cookie_value;
+  }
+
+  function getCookie(cookieName) {
+    let cookieValue: string = "";
+    if (document.cookie) {
+      var array = document.cookie.split((escape(cookieName) + '='));
+      if (array.length >= 2) {
+        var arraySub = array[1].split(';');
+        cookieValue = unescape(arraySub[0]);
+      }
+    }
+    return cookieValue;
+  }
+
 
   return (
     <article>
@@ -90,32 +153,25 @@ export default function HomePage() {
           <H2>
             Hello~~~
           </H2>
-          <p>
-            <FormattedMessage {...messages.startProjectMessage} />
-          </p>
+          <div id="kakaoLoginButton">
+
+          </div>
+          <br/>
+
+          <StyledButton onClick={() => {
+            let accessToken : string = getCookie("kakao-access-token");
+
+            axios.get(`http://localhost:8283/kakao/getCalendar?accessToken=${accessToken}`).then((response) => {
+              console.log(response);
+            });
+          }}>
+            눌러주세요
+          </StyledButton>
+          <p id="token-result"></p>
+
         </CenteredSection>
-        <Section>
-          <H2>
-            <FormattedMessage {...messages.trymeHeader} />
-          </H2>
-          <Form onSubmit={onSubmitForm}>
-            <label htmlFor="username">
-              <FormattedMessage {...messages.trymeMessage} />
-              <AtPrefix>
-                <FormattedMessage {...messages.trymeAtPrefix} />
-              </AtPrefix>
-              <Input
-                id="username"
-                type="text"
-                placeholder="mxstbr"
-                value={username}
-                onChange={onChangeUsername}
-              />
-            </label>
-          </Form>
-          <ReposList {...reposListProps} />
-        </Section>
+
       </div>
-    </article>
+    </article >
   );
 }
